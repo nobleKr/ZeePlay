@@ -263,6 +263,12 @@ internal class ClusterMapPresentation(
                         GeelyClusterDisplay.matches(display, size.x, size.y)
                     }
                 }
+                if (ZeekrClusterDisplay.supported()) {
+                    return displays.firstOrNull { display ->
+                        val size = sizeOf(display)
+                        ZeekrClusterDisplay.matches(display, size.x, size.y)
+                    }
+                }
                 return displays.firstOrNull { display ->
                     val size = sizeOf(display)
                     DiLink4ClusterDisplay.accepts(display.name, size.x, size.y)
