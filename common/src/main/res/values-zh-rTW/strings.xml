@@ -1031,4 +1031,7 @@
     <string name="settings_zeekr_controls_description">使用車機及支援的方向盤按鍵控制音樂。下次連線生效。</string>
     <string name="settings_zeekr_gesture_hint">選擇不會與車機系統衝突的手勢。</string>
     <string name="settings_zeekr_window_hint">在應用程式視窗中開啟 CarPlay，適用於桌面卡片和分割畫面。下次開啟 CarPlay 時生效。</string>
+    <string name="settings_zeekr_hud">Windshield HUD</string>
+    <string name="settings_zeekr_hud_description">Show the next turn — maneuver, distance and road — on the car’s head-up display while navigating.</string>
+    <string name="settings_zeekr_cluster_map_description">Shows the iPhone\'s CarPlay map on the instrument-cluster display.</string>
 </resources>

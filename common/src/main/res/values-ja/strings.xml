@@ -1073,4 +1073,7 @@
     <string name="settings_zeekr_controls_description">対応する車載ボタンで音楽を操作します。次回接続時に適用。</string>
     <string name="settings_zeekr_gesture_hint">車載システムと競合しないジェスチャーを選んでください。</string>
     <string name="settings_zeekr_window_hint">対応するホームカードや分割画面で CarPlay をアプリのウィンドウ内に開きます。次回 CarPlay 起動時に適用。</string>
+    <string name="settings_zeekr_hud">Windshield HUD</string>
+    <string name="settings_zeekr_hud_description">Show the next turn — maneuver, distance and road — on the car’s head-up display while navigating.</string>
+    <string name="settings_zeekr_cluster_map_description">Shows the iPhone\'s CarPlay map on the instrument-cluster display.</string>
 </resources>

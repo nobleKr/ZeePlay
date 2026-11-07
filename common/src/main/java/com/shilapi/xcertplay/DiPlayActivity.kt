@@ -4694,6 +4694,17 @@ class DiPlayActivity : ComponentActivity(), AppAppearanceOwner {
             ZeekrInteractionSettings.setControlsEnabled(this, it)
             markReconnectNeeded()
         }
+        toggle(card, getString(R.string.carplay_map_on_instrument_cluster_experimental),
+            getString(R.string.settings_zeekr_cluster_map_description),
+            AirPlayPersistence.loadClusterMapEnabled(this)) {
+            AirPlayPersistence.saveClusterMapEnabled(this, it)
+            markReconnectNeeded()
+        }
+        toggle(card, getString(R.string.settings_zeekr_hud), getString(R.string.settings_zeekr_hud_description),
+            ZeekrInteractionSettings.hudEnabled(this)) {
+            ZeekrInteractionSettings.setHudEnabled(this, it)
+            markReconnectNeeded()
+        }
     }
 
     private fun nativeVehicleDataSettings(card: LinearLayout) {

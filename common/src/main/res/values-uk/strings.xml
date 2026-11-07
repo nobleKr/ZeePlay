@@ -983,4 +983,7 @@
     <string name="settings_zeekr_controls_description">Керування сумісними кнопками автомобіля. Під час наступного підключення.</string>
     <string name="settings_zeekr_gesture_hint">Виберіть жест, який не конфліктує із системою автомобіля.</string>
     <string name="settings_zeekr_window_hint">Відкриває CarPlay у вікні застосунку для сумісних карток і розділеного екрана. Застосовується під час наступного запуску CarPlay.</string>
+    <string name="settings_zeekr_hud">HUD на лобовому склі</string>
+    <string name="settings_zeekr_hud_description">Показувати наступний манёвр — стрілку, дистанцію й дорогу — на проєкційному дисплеї авто під час навігації.</string>
+    <string name="settings_zeekr_cluster_map_description">Показує карту CarPlay з iPhone на панелі приладів.</string>
 </resources>

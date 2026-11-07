@@ -1074,4 +1074,7 @@
     <string name="settings_zeekr_controls_description">Play, pause and skip using supported car controls. Applies at the next connection.</string>
     <string name="settings_zeekr_gesture_hint">Choose a gesture that does not conflict with the vehicle system.</string>
     <string name="settings_zeekr_window_hint">Open CarPlay in the app window for compatible launcher cards and split screen. Applies the next time CarPlay opens.</string>
+    <string name="settings_zeekr_hud">Windshield HUD</string>
+    <string name="settings_zeekr_hud_description">Show the next turn — maneuver, distance and road — on the car’s head-up display while navigating.</string>
+    <string name="settings_zeekr_cluster_map_description">Shows the iPhone\'s CarPlay map on the instrument-cluster display.</string>
 </resources>

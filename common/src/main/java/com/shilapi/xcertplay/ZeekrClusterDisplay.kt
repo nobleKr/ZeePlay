@@ -7,6 +7,11 @@
  * in the Zeekr edition (BuildConfig.IS_ZEEKR), so standard builds are unaffected. The stream
  * geometry comes from the measured panel in CarPlayHostActivity.clusterDisplayConfig(), so no
  * per-OEM stream descriptor is needed here.
+ *
+ * Confirmed on the 001 (dumpsys display): the cluster is logical Display 1, "HDMI Screen"
+ * uniqueId local:3 (port 3), 2560 x 536, EXTERNAL + FLAG_PRESENTATION. The car's other
+ * presentation panels — 1024 x 576 (local:4) and 1280 x 360 (local:5) — are narrower than the
+ * 2000 px floor, so the match below uniquely selects the cluster.
  */
 package com.shilapi.xcertplay
 
@@ -18,16 +23,18 @@ internal object ZeekrClusterDisplay {
     fun supported(): Boolean = com.shilapi.xcertplay.host.BuildConfig.IS_ZEEKR
 
     /**
-     * The Zeekr 001 cluster is the non-default presentation display with a wide, short aspect.
-     * Gated by [supported] so this never claims another OEM's cluster on a standard build.
-     * TODO(device): confirm the exact pixels from `dumpsys display` on the car; matching is
-     * size/flag-based so an off-by-a-few panel still works.
+     * The Zeekr 001 cluster is the wide, short presentation panel (confirmed 2560 x 536).
+     * Bounds are anchored on that measured geometry with a little tolerance for trim/firmware
+     * variance; the width floor plus the ultra-wide aspect keep the 1024 x 576 and 1280 x 360
+     * panels out. Gated by [supported] so this never claims another OEM's cluster.
      */
     fun matches(displayId: Int, width: Int, height: Int, flags: Int): Boolean =
         supported() &&
             displayId != Display.DEFAULT_DISPLAY &&
             (flags and Display.FLAG_PRESENTATION) != 0 &&
-            width >= 1600 && height in 320..820 && width >= height * 2
+            width >= 2000 &&          // 001 cluster panel is 2560 wide
+            height in 440..680 &&     // confirmed 536
+            width >= height * 3       // ultra-wide strip (~4.8:1)
 
     fun matches(display: Display, width: Int, height: Int): Boolean =
         matches(display.displayId, width, height, display.flags)
