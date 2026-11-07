@@ -16,7 +16,7 @@ android {
 
         externalNativeBuild {
             ndkBuild {
-                arguments 'APP_PLATFORM=android-24'
+                arguments 'APP_PLATFORM=android-24', "DIPLAY_EDITION=${rootProject.ext.diplayEdition}"
             }
         }
 

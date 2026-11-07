@@ -20,3 +20,15 @@ LOCAL_C_INCLUDES := $(LOCAL_PATH)/speexdsp $(LOCAL_PATH)/speexdsp/include
 LOCAL_CFLAGS := -O2 -DFLOATING_POINT -DUSE_KISS_FFT -DEXPORT= -Wno-unused-parameter
 LOCAL_LDLIBS := -lm
 include $(BUILD_SHARED_LIBRARY)
+
+# --- Zeekr edition only: clean-room HUD (HAB) frame channel -------------------
+# Packaged solely when building -Pdiplay.edition=zeekr (DIPLAY_EDITION passed from
+# shared/build.gradle). Standard builds never see this module or its .so.
+ifeq ($(DIPLAY_EDITION),zeekr)
+include $(CLEAR_VARS)
+LOCAL_MODULE := zeekr_hab
+LOCAL_SRC_FILES := zeekr_hab.cpp
+LOCAL_CPPFLAGS := -Wall -Wextra -fno-rtti -fno-exceptions -std=c++17
+LOCAL_LDLIBS := -llog -landroid -ldl
+include $(BUILD_SHARED_LIBRARY)
+endif
