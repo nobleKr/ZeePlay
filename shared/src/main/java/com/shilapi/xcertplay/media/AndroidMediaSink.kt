@@ -545,6 +545,8 @@ class AndroidMediaSink(
         updateMediaAudio(id, false)
     }
 
+    override fun audioPlayoutSample(id: AudioStreamId): Long? = audioRenderers[id]?.playoutSamples()
+
     private fun updateMediaAudio(id: AudioStreamId, active: Boolean) {
         val (before, after) = synchronized(mediaAudioTypes) {
             val before = mediaAudioTypes.isNotEmpty()
@@ -2645,6 +2647,17 @@ private class AudioRenderer(
     }
 
     // Persist counters even during packet starvation, and flush before disconnect releases the track.
+    /** RTP-clock samples the track has actually played, or null before playback starts. */
+    fun playoutSamples(): Long? {
+        val t = track ?: return null
+        if (!playbackStarted) return null
+        val headFrames = runCatching { t.playbackHeadPosition.toLong() and 0xffff_ffffL }.getOrNull() ?: return null
+        val trackRate = t.sampleRate
+        val rtpRate = format.rtpClockRate
+        return if (trackRate > 0 && rtpRate != trackRate)
+            Math.round(headFrames.toDouble() * rtpRate / trackRate) else headFrames
+    }
+
     private fun logStatsIfDue(force: Boolean = false) {
         val now = System.nanoTime()
         if (statsWindowStartNs == 0L) statsWindowStartNs = now
