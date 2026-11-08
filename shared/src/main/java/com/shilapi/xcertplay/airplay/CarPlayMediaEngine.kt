@@ -32,6 +32,8 @@ interface MediaSink {
     fun onAudioStarted(id: AudioStreamId, format: AudioFormat, firstSample: Int) {}
     fun onAudioRtp(id: AudioStreamId, format: AudioFormat, rtp: ByteArray, sample: Int) {}
     fun onAudioStopped(id: AudioStreamId) {}
+    /** RTP-clock samples the media track has actually played since its first sample, or null. */
+    fun audioPlayoutSample(id: AudioStreamId): Long? = null
     fun onMicrophoneStarted(id: AudioStreamId, config: MicrophoneConfig) {}
     fun onMicrophoneStopped(id: AudioStreamId) {}
     fun onIapMessage(bytes: ByteArray) {}
@@ -508,8 +510,22 @@ class CarPlayMediaEngine(
                     (nowNs - originNs) / 1e9 - meta.playoutLatencyMs / 1000.0,
                 )
                 val firstUnsigned = firstSample.toLong() and 0xffff_ffffL
-                val sampleTime = (firstUnsigned + Math.round(elapsedSec * clockRate)) and
+                val wallSampleTime = (firstUnsigned + Math.round(elapsedSec * clockRate)) and
                     0xffff_ffffL
+                // Buffered media: report the track's REAL playout position, not the wall-clock
+                // extrapolation. Wall-clock hides decoder/HAL stalls, so the iPhone's own sync
+                // sees the drift and tears the stream down (FLUSH -> FLUSH -> TEARDOWN).
+                val playoutOffset = if (meta.format.audioType == "media")
+                    sink.audioPlayoutSample(AudioStreamId(meta.type, meta.format.audioType)) else null
+                val sampleTime = if (playoutOffset != null)
+                    (firstUnsigned + playoutOffset) and 0xffff_ffffL else wallSampleTime
+                if (meta.format.audioType == "media") {
+                    val src = if (playoutOffset != null) "track" else "wall"
+                    session.logDebug(
+                        "Audio: feedback-pos type=${meta.type} source=$src sampleTime=$sampleTime " +
+                            "wall=$wallSampleTime playoutOffset=${playoutOffset ?: -1} clockRate=$clockRate",
+                    )
+                }
                 entry["streamConnectionID"] = unsignedPlistInteger(meta.connectionId ?: 0L)
                 entry["timestamp"] = session.syncedNtp()
                 entry["timestampRawNs"] = nowNs
