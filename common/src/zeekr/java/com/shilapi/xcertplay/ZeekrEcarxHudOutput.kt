@@ -33,6 +33,7 @@ internal class ZeekrEcarxHudOutput(private val context: Context) : WindshieldHud
 
     private val thread = HandlerThread("zeekr-ecarx-hud").apply { start() }
     private val handler = Handler(thread.looper)
+    private val guidanceStatus = ZeekrEcarxGuidanceStatus(context)
 
     private var dim: Any? = null
     private var navi: Any? = null
@@ -59,7 +60,9 @@ internal class ZeekrEcarxHudOutput(private val context: Context) : WindshieldHud
     override fun release() {
         handler.post {
             released = true
+            safe("guidanceStop") { guidanceStatus.setActive(false) }
             safe("tbtStop") { if (connected) mTbtStop?.invoke(navi) }
+            safe("guidanceRelease") { guidanceStatus.release() }
             safe("disconnect") { dim?.let { it.javaClass.getMethod("disconnect").invoke(it) } }
             dim = null; navi = null; connected = false
         }
@@ -72,11 +75,15 @@ internal class ZeekrEcarxHudOutput(private val context: Context) : WindshieldHud
         if (guidance == null) {
             if (tbtStarted) {
                 safe("tbtStop") { mTbtStop?.invoke(n) }; tbtStarted = false; lastTurnId = Int.MIN_VALUE
+                guidanceStatus.setActive(false)
                 WheelKeyLog.note("Ecarx HUD: tbt stopped (no guidance)")
             }
             return
         }
-        if (!tbtStarted) { safe("tbtStart") { mTbtStart?.invoke(n) }; tbtStarted = true }
+        if (!tbtStarted) {
+            safe("tbtStart") { mTbtStart?.invoke(n) }; tbtStarted = true
+            guidanceStatus.setActive(true)   // ICarFunction guidance-status announce (HUD/ZID navi-active gate)
+        }
         val turnId = ZeekrEcarxTurnId.of(guidance)
         val info = buildInfo(turnId, guidance.distanceMeters.toLong(), guidance.road)
         safe("navInfo") { mUpdateNavInfo?.invoke(n, info) }
