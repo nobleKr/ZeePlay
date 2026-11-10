@@ -38,10 +38,13 @@ internal class ZeekrEcarxGuidanceStatus(private val context: Context) {
     private var carFunction: Any? = null
     private var resolved = false
     private var lastSent = -1
+    private var lastTla: String? = null
+    private var lastTlaLogMs = 0L
 
     /** Announce guidance active (1) or stopped (0). No-op if already in that state. */
     fun setActive(active: Boolean) {
         val want = if (active) 1 else 0
+        if (!active) lastTla = null
         if (want == lastSent) return
         val fn = ensureCarFunction() ?: return
         val json = payload(want)
@@ -68,6 +71,7 @@ internal class ZeekrEcarxGuidanceStatus(private val context: Context) {
         carFunction = null
         resolved = false
         lastSent = -1
+        lastTla = null
     }
 
     /**
@@ -88,6 +92,74 @@ internal class ZeekrEcarxGuidanceStatus(private val context: Context) {
             "\"vStraightDist\":{\"value\":0}" +
             "}"
 
+    /**
+     * Push the turn-by-turn main action (arrow + distance + road name) to the windshield HUD via
+     * ICarFunction SETTING_FUNC_TLA_MAIN_ACTION_INFO. Payload is the exact Gson JSON of the stock
+     * IdtTLAMainAction (full object, {"value":N} wrappers), only vFirstTurn / vFirstTurnDis /
+     * vCurrRoadNameNavingSeN carry data; the rest stay at the byte[0] defaults the stock map emits.
+     * [turnType] is the ECARX TurnType code (see ZeekrEcarxTurnId.tla).
+     */
+    fun updateTurn(turnType: Int, distanceMeters: Int, road: String) {
+        val key = "$turnType|$distanceMeters|$road"
+        if (key == lastTla) return
+        lastTla = key
+        val fn = ensureCarFunction() ?: return
+        val json = tlaPayload(turnType, distanceMeters, road)
+        val bytes = json.toByteArray(Charsets.UTF_8)
+        val rc = runCatching {
+            val m = fn.javaClass.getMethod(
+                "setBytesFunctionValue",
+                Int::class.javaPrimitiveType,
+                Int::class.javaPrimitiveType,
+                ByteArray::class.java,
+            )
+            m.invoke(fn, FUNC_TLA_MAIN_ACTION, ZONE_GLOBAL, bytes)
+        }.onFailure {
+            Log.w(TAG, "tla send failed: ${it.message}")
+            WheelKeyLog.note("Ecarx HUD: tla send FAILED ${it.javaClass.simpleName}")
+        }.getOrNull()
+        val now = android.os.SystemClock.uptimeMillis()
+        if (now - lastTlaLogMs > 3000L) {
+            lastTlaLogMs = now
+            WheelKeyLog.note("Ecarx HUD: tla turn=$turnType dist=$distanceMeters rc=$rc bytes=${bytes.size}")
+        }
+    }
+
+    /** Full IdtTLAMainAction Gson JSON; only first-turn fields carry data. */
+    private fun tlaPayload(turn: Int, dist: Int, road: String): String =
+        "{" +
+            "\"isValidate\":false," +
+            "\"vChargeStationRemain\":{\"isValidate\":false}," +
+            "\"vCrossOutCntSeN\":{\"value\":0}," +
+            "\"vCurLinkIdxSeN\":{\"value\":0}," +
+            "\"vCurLinkSpeed\":{\"value\":0}," +
+            "\"vCurSegIdxSeN\":{\"value\":0}," +
+            "\"vCurrRoadNameNavingSeN\":{\"isValidate\":true,\"value\":\"${jsonEscape(road)}\"}," +
+            "\"vFirstTurn\":{\"value\":$turn}," +
+            "\"vFirstTurnDis\":{\"value\":$dist}," +
+            "\"vLinkRemainDistSeN\":{\"value\":0}," +
+            "\"vPathIDSeN\":{\"value\":0}," +
+            "\"vRoadLevelForNavingSeN\":{\"value\":0}," +
+            "\"vRoundaboutOutAngle\":{\"value\":0}," +
+            "\"vRouteRemain\":{\"isValidate\":true,\"vRemainDist\":{\"value\":0},\"vRemainTime\":{\"value\":0}}," +
+            "\"vSecondTurn\":{\"value\":0}," +
+            "\"vSecondTurnDis\":{\"value\":0}," +
+            "\"vViaRemain\":{\"isValidate\":false}" +
+            "}"
+
+    private fun jsonEscape(s: String): String {
+        val sb = StringBuilder(s.length)
+        for (c in s) when (c) {
+            '\\' -> sb.append("\\\\")
+            '"' -> sb.append("\\\"")
+            '\n' -> sb.append("\\n")
+            '\r' -> sb.append("\\r")
+            '\t' -> sb.append("\\t")
+            else -> if (c < ' ') sb.append("\\u%04x".format(c.code)) else sb.append(c)
+        }
+        return sb.toString()
+    }
+
     private fun ensureCarFunction(): Any? {
         if (resolved) return carFunction
         resolved = true
@@ -106,6 +178,7 @@ internal class ZeekrEcarxGuidanceStatus(private val context: Context) {
     private companion object {
         private const val TAG = "Zeekr-EcarxGuide"
         private const val FUNC_GUIDANCE_STATUS = 1342245632   // INavigation.SETTING_FUNC_GUIDANCE_STATUS_UPDATE_INFO
+        private const val FUNC_TLA_MAIN_ACTION = 1342243328   // INavigation.SETTING_FUNC_TLA_MAIN_ACTION_INFO
         private const val ZONE_GLOBAL = -2147483648           // 0x80000000, Integer.MIN_VALUE
         private const val NAVI_ID = "zeeplay"
         private const val ROUTE_UUID = 1

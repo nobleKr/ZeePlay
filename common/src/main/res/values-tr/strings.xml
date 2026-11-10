@@ -1059,7 +1059,7 @@
     <string name="settings_zeekr_controls_description">Uyumlu araç tuşlarıyla müziği kontrol edin. Sonraki bağlantıda uygulanır.</string>
     <string name="settings_zeekr_gesture_hint">Araç sistemiyle çakışmayan bir hareket seçin.</string>
     <string name="settings_zeekr_window_hint">Uyumlu ana ekran kartları ve bölünmüş ekran için CarPlay’i uygulama penceresinde açar. CarPlay sonraki açılışında uygulanır.</string>
-    <string name="settings_zeekr_hud">Windshield HUD</string>
-    <string name="settings_zeekr_hud_description">Show the next turn — maneuver, distance and road — on the car’s head-up display while navigating.</string>
+    <string name="settings_zeekr_hud">Cluster + windshield HUD</string>
+    <string name="settings_zeekr_hud_description">Show the next turn — maneuver, distance and road — on the instrument cluster and the windshield head-up display while navigating.</string>
     <string name="settings_zeekr_cluster_map_description">Shows the iPhone\'s CarPlay map on the instrument-cluster display.</string>
 </resources>

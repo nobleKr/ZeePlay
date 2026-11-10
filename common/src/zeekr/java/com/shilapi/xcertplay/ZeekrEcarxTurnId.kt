@@ -33,4 +33,24 @@ internal object ZeekrEcarxTurnId {
         in 35..44 -> 130 + (icon - 34)           // roundabout exit 1..10, left-hand  -> 131..140
         else -> 0
     }
+
+    /**
+     * Maps the same [ClusterTurnGuidance.icon] vocabulary to the ECARX TLA "TurnType" the windshield
+     * HUD reads (IdtTLAMainAction.vFirstTurn). Different code space from [of]: 2 TurnLeft, 3 TurnRight,
+     * 4/5 Slight, 6/7 Hard, 8 UTurn, 9 Continue, 11 EntryRing, 12 LeaveRing, 15 ArriveDestination.
+     */
+    fun tla(guidance: ClusterTurnGuidance): Int = when (val icon = guidance.icon) {
+        1 -> 2             // LEFT -> TurnLeft
+        2 -> 3             // RIGHT -> TurnRight
+        3 -> 4             // SLIGHT_LEFT -> SlightLeft
+        4 -> 5             // SLIGHT_RIGHT -> SlightRight
+        7 -> 6             // SHARP_LEFT -> TurnHardLeft
+        8 -> 7             // SHARP_RIGHT -> TurnHardRight
+        9, 10 -> 8         // U_TURN -> UTurn
+        11 -> 9            // STRAIGHT -> Continue
+        13, 24 -> 11       // ROUNDABOUT_ENTER -> EntryRing
+        in 25..44 -> 12    // ROUNDABOUT_EXIT -> LeaveRing
+        48 -> 15           // DESTINATION -> ArriveDestination
+        else -> 0          // Default / no arrow
+    }
 }

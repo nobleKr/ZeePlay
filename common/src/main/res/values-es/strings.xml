@@ -971,7 +971,7 @@
     <string name="settings_zeekr_controls_description">Controla la música con botones compatibles del vehículo. Se aplica en la próxima conexión.</string>
     <string name="settings_zeekr_gesture_hint">Elige un gesto que no interfiera con el sistema del vehículo.</string>
     <string name="settings_zeekr_window_hint">Abre CarPlay en la ventana de la app para tarjetas compatibles y pantalla dividida. Se aplica la próxima vez que abras CarPlay.</string>
-    <string name="settings_zeekr_hud">Windshield HUD</string>
-    <string name="settings_zeekr_hud_description">Show the next turn — maneuver, distance and road — on the car’s head-up display while navigating.</string>
+    <string name="settings_zeekr_hud">Cluster + windshield HUD</string>
+    <string name="settings_zeekr_hud_description">Show the next turn — maneuver, distance and road — on the instrument cluster and the windshield head-up display while navigating.</string>
     <string name="settings_zeekr_cluster_map_description">Shows the iPhone\'s CarPlay map on the instrument-cluster display.</string>
 </resources>

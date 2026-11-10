@@ -87,6 +87,8 @@ internal class ZeekrEcarxHudOutput(private val context: Context) : WindshieldHud
         val turnId = ZeekrEcarxTurnId.of(guidance)
         val info = buildInfo(turnId, guidance.distanceMeters.toLong(), guidance.road)
         safe("navInfo") { mUpdateNavInfo?.invoke(n, info) }
+        // Windshield HUD: push the turn arrow + distance over ICarFunction (separate from the DIM).
+        guidanceStatus.updateTurn(ZeekrEcarxTurnId.tla(guidance), guidance.distanceMeters, guidance.road)
         // Heartbeat log: on maneuver change or every ~3s, so the report shows whether guidance
         // actually keeps flowing (dist changing) or stalls, plus the raw icon vs mapped turnId.
         val now = android.os.SystemClock.uptimeMillis()
