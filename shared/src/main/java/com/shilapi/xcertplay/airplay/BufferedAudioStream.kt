@@ -64,6 +64,7 @@ internal class BufferedAudioStream(
     private var feedStartNs = 0L
     private var fedSamples = 0L
     private var outputGeneration = 0L
+    private var lastAnchorLogNs = 0L
 
     val port: Int get() = boundPort
 
@@ -231,8 +232,31 @@ internal class BufferedAudioStream(
         anchorLocked()
     }
 
-    /** GETANCHOR: the current anchor, or null before the first SETRATE. */
-    fun anchor(): Map<String, Any?>? = synchronized(lock) { anchorLocked() }
+    /**
+     * GETANCHOR: re-anchor to the renderer's real playout position mapped to [nowNtp], so the iPhone's
+     * buffered flow control follows the actual AudioTrack clock instead of a wall-clock estimate — the
+     * estimate drifts (startup latency + DAC rate) and makes the phone FLUSHBUFFERED / re-SETUP the
+     * media stream, which is why buffered music never sustains while realtime prompts play fine. Falls
+     * back to the stored anchor before playback has a real head position.
+     */
+    fun anchor(nowNtp: BigInteger): Map<String, Any?>? = synchronized(lock) {
+        val start = feedStartTimestamp
+        if (rate > 0 && start != null) {
+            val played = runCatching { sink.audioPlayoutSample(id) }.getOrNull()
+            if (played != null) {
+                val real = (start + played) and U32
+                val wallMs = maxOf(0L, (nanoTime() - feedStartNs) / 1_000_000L - START_LATENCY_MILLIS)
+                val wall = (start + wallMs * format.sampleRate / 1000L) and U32
+                if (nanoTime() - lastAnchorLogNs > 3_000_000_000L) {
+                    lastAnchorLogNs = nanoTime()
+                    log("Buffered anchor: real=$real wall=$wall driftMs=${(wall - real) * 1000L / format.sampleRate}")
+                }
+                anchorRtp = real
+                anchorNtp = nowNtp
+            }
+        }
+        anchorLocked()
+    }
 
     /** FLUSHBUFFERED: drop what was sent before [untilTimestamp] and restart the output there. */
     fun flush(untilTimestamp: Long?) = synchronized(lock) {
@@ -260,6 +284,10 @@ internal class BufferedAudioStream(
     private fun positionLocked(): Long? {
         val start = feedStartTimestamp
         if (start != null && rate > 0) {
+            // Prefer the renderer's real AudioTrack playout; fall back to the wall-clock estimate
+            // only before the head position is available.
+            val played = runCatching { sink.audioPlayoutSample(id) }.getOrNull()
+            if (played != null) return (start + played) and U32
             val playedMillis = maxOf(0L, (nanoTime() - feedStartNs) / 1_000_000L - START_LATENCY_MILLIS)
             return (start + playedMillis * format.sampleRate / 1000L) and U32
         }

@@ -369,7 +369,7 @@ class CarPlayMediaEngine(
             "SETRATE", "SETRATEANCHORTIME" -> {
                 if (rate == null || rate !in 0..1) null else buffered.setRate(rtpTime, rate, session.syncedNtp())
             }
-            "GETANCHOR" -> buffered.anchor()
+            "GETANCHOR" -> buffered.anchor(session.syncedNtp())
             "FLUSHBUFFERED" -> {
                 (body["flushUntilTS"] as? Number)?.toLong()?.let { buffered.flush(it) }
                 null
