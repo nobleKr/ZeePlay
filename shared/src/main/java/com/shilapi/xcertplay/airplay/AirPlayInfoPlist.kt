@@ -10,6 +10,18 @@ object AirPlayInfoPlist {
     const val MAIN_UUID = "b7e6c5a0-1111-4000-8000-000000000001"
     const val ALT_UUID = "b7e6c5a0-2222-4000-8000-000000000002"
 
+    // HUD screens (windshield): CarPlay secondary-display streams routed to the HUD display,
+    // alongside the cluster. CARD is the glass turn card; MAP is the live map. Mirrors the engine.
+    const val CARD_UUID = "b7e6c5a0-3333-4000-8000-000000000003"
+    const val MAP_UUID = "b7e6c5a0-4444-4000-8000-000000000004"
+    const val CARD_URL = "maps:/car/instrumentcluster/instructioncard"
+    const val CARD_WIDTH = 624
+    const val CARD_HEIGHT = 272
+    const val CARD_FPS = 10
+    private const val CARD_DEFAULT_MM_PER_PIXEL = 0.35096153846153844
+    const val STREAM_TYPE_CARD_SCREEN = 1111
+    const val STREAM_TYPE_MAP_SCREEN = 1112
+
     private const val STREAM_TYPE_MAIN_SCREEN = 110
     private const val STREAM_TYPE_ALT_SCREEN = 111
     private const val DISPLAY_FEATURE_KNOBS = 0x02
@@ -33,6 +45,36 @@ object AirPlayInfoPlist {
             displayEntry(config.main, STREAM_TYPE_MAIN_SCREEN, MAIN_UUID),
         )
         config.cluster?.let { displays.add(displayEntry(it, STREAM_TYPE_ALT_SCREEN, ALT_UUID)) }
+        // HUD card/map: declared as secondary screens so the phone offers their video streams.
+        if (config.hudCard) {
+            val d = clusterMmPerPixel(config.cluster)
+            displays.add(
+                displayEntry(
+                    AirPlayDisplayConfig(
+                        widthPixels = CARD_WIDTH,
+                        heightPixels = CARD_HEIGHT,
+                        widthPhysicalMm = Math.round(CARD_WIDTH * d).toInt(),
+                        heightPhysicalMm = Math.round(CARD_HEIGHT * d).toInt(),
+                        fps = CARD_FPS,
+                        primaryInputDevice = 0,
+                        features = 0,
+                        initialUrl = CARD_URL,
+                    ),
+                    STREAM_TYPE_ALT_SCREEN, CARD_UUID,
+                ),
+            )
+        }
+        if (config.hudMap) {
+            val d = clusterMmPerPixel(config.cluster)
+            displays.add(
+                displayEntry(
+                    CarPlayClusterDisplay.hudMap(
+                        config.hudMapSizePercent, config.hudMapMarkerHorizontal, config.hudMapMarkerVertical, d,
+                    ),
+                    STREAM_TYPE_ALT_SCREEN, MAP_UUID,
+                ),
+            )
+        }
 
         val info = linkedMapOf<String, Any?>(
             "sourceVersion" to config.sourceVersion,
@@ -192,6 +234,10 @@ object AirPlayInfoPlist {
             "adjacentViewAreas" to (0 until areaCount).filter { it != index },
         ),
     )
+
+    /** Physical mm per pixel for a HUD screen, taken from the cluster panel when present. */
+    private fun clusterMmPerPixel(cluster: AirPlayDisplayConfig?): Double =
+        cluster?.let { (it.widthPhysicalMm ?: 200) / it.widthPixels.toDouble() } ?: CARD_DEFAULT_MM_PER_PIXEL
 
     private fun displayEntry(display: AirPlayDisplayConfig, type: Int, uuid: String): Map<String, Any?> {
         val widthPhysical = AirPlayDisplaySettings.sanitizeReportedPhysicalMm(

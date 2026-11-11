@@ -80,7 +80,7 @@ class AirPlaySession(
     private val mfi: MfiAuthenticator?,
     private val listener: AirPlaySessionListener,
     private val media: AirPlayMediaHandler,
-) : Closeable {
+) : Closeable, HudScreenHost {
     internal val pairSetup = PairSetup(identity, pairings)
     internal val pairVerify = PairVerify(identity, pairings)
     internal var cipher: ControlCipher? = null
@@ -155,6 +155,7 @@ class AirPlaySession(
         if (!closed.compareAndSet(false, true)) return
         mainScreenToken = null
         clearClusterContent()
+        endHudScreens()
         safeClose(socket)
         try {
             media.onSessionClosed(this)
@@ -198,6 +199,18 @@ class AirPlaySession(
         val shown: Boolean = true, val token: Any = Any())
     private val clusterContentLock = Any()
     private val clusterCommandLock = Any()
+
+    // HUD screens (windshield CARD/MAP), parallel to the cluster. Each is a secondary CarPlay
+    // video stream; active once the phone sets it up, uiShown tracks the last showUI/stopUI.
+    private class HudScreenState(val uuid: String, val url: String) {
+        @Volatile var active = false
+        @Volatile var uiShown = false
+    }
+    private val hudCommandLock = Any()
+    private val hudScreens = mapOf(
+        HudScreen.CARD to HudScreenState(AirPlayInfoPlist.CARD_UUID, AirPlayInfoPlist.CARD_URL),
+        HudScreen.MAP to HudScreenState(AirPlayInfoPlist.MAP_UUID, CarPlayClusterDisplay.MAP_URL),
+    )
     @Volatile private var clusterContent: ClusterContent? = null
     private var requestedClusterUrl = config.cluster?.initialUrl // guarded by clusterContentLock
 
@@ -255,6 +268,59 @@ class AirPlaySession(
             if (uiSent) clusterContent = current.copy(displayed = if (sent) url else null,
                 shown = true, token = Any())
             sent
+        }
+    }
+
+    override fun hasHudScreen(screen: HudScreen): Boolean = hudScreens.getValue(screen).active
+
+    override fun applyHudScreenWanted(screen: HudScreen, wanted: Boolean) =
+        applyHudScreenWanted(screen, wanted, force = false)
+
+    /** showUI(+keyframe) / stopUI the HUD [screen], matching the cluster handshake. */
+    fun applyHudScreenWanted(screen: HudScreen, wanted: Boolean, force: Boolean) {
+        val state = hudScreens.getValue(screen)
+        synchronized(hudCommandLock) {
+            if (closed.get() || !state.active || !(force || state.uiShown != wanted)) return
+            val sent = if (!wanted) {
+                sendCommand(mapOf("type" to "stopUI", "params" to mapOf("uuid" to state.uuid)))
+            } else {
+                sendCommand(mapOf("type" to "showUI", "params" to mapOf("uuid" to state.uuid, "url" to state.url))) &&
+                    sendCommand(mapOf("type" to "forceKeyFrame", "params" to mapOf("uuid" to state.uuid)))
+            }
+            if (sent) state.uiShown = wanted
+            debugLog("airplay HUD $screen ${if (wanted) "showUI" else "stopUI"} sent=$sent")
+        }
+    }
+
+    private fun startHudScreen(screen: HudScreen) {
+        val state = hudScreens.getValue(screen)
+        synchronized(hudCommandLock) { state.active = true; state.uiShown = true }
+        CarPlayNavigationState.register(this)
+    }
+
+    /** Marks every active HUD screen ended; returns their stream types for media teardown. */
+    private fun endHudScreens(): List<Int> {
+        val ended = arrayListOf<Int>()
+        synchronized(hudCommandLock) {
+            for ((screen, state) in hudScreens) if (state.active) {
+                state.active = false
+                ended.add(
+                    if (screen == HudScreen.CARD) AirPlayInfoPlist.STREAM_TYPE_CARD_SCREEN
+                    else AirPlayInfoPlist.STREAM_TYPE_MAP_SCREEN,
+                )
+            }
+        }
+        CarPlayNavigationState.unregister(this)
+        return ended
+    }
+
+    /** Re-push the wanted state for every active HUD screen after (re-)SETUP. */
+    private fun reapplyHudScreens() {
+        for (screen in HudScreen.entries) {
+            if (hudScreens.getValue(screen).active) {
+                val wanted = CarPlayNavigationState.wanted(screen)
+                applyHudScreenWanted(screen, wanted, force = !wanted)
+            }
         }
     }
 
@@ -631,6 +697,7 @@ class AirPlaySession(
             Log.w(TAG, "airplay SETUP response callback failed", error)
         }
         reapplyClusterContent()
+        reapplyHudScreens()
     }
 
     private fun debugLog(message: String, uiVisible: Boolean = true) {
@@ -706,16 +773,38 @@ class AirPlaySession(
             debugLog("airplay SETUP stream type=$type payload=$stream")
             when (type) {
                 STREAM_TYPE_MAIN_SCREEN, STREAM_TYPE_ALT_SCREEN -> {
-                    val port = media.onScreen(this, type, stream)
-                    debugLog("airplay screen stream type=$type dataPort=${port ?: "rejected"}")
-                    if (port != null) {
-                        if (type == STREAM_TYPE_MAIN_SCREEN && config.main.useIphoneCornerMask) {
-                            findIphoneCornerMask(stream)?.let(::notifyCornerMask)
+                    // A type-111 stream carrying CARD_UUID/MAP_UUID is a HUD screen, not the cluster.
+                    val hudScreen = if (type == STREAM_TYPE_ALT_SCREEN) {
+                        val uuid = string(stream["uuid"])
+                        when {
+                            config.hudCard && uuid.equals(AirPlayInfoPlist.CARD_UUID, ignoreCase = true) -> HudScreen.CARD
+                            config.hudMap && uuid.equals(AirPlayInfoPlist.MAP_UUID, ignoreCase = true) -> HudScreen.MAP
+                            else -> null
                         }
-                        activeStreams.add(type)
-                        if (type == STREAM_TYPE_ALT_SCREEN) beginClusterContent()
-                        else mainScreenToken = Any()
-                        result.add(linkedMapOf("type" to type, "dataPort" to port))
+                    } else {
+                        null
+                    }
+                    if (hudScreen != null) {
+                        val hudType = if (hudScreen == HudScreen.CARD) AirPlayInfoPlist.STREAM_TYPE_CARD_SCREEN
+                        else AirPlayInfoPlist.STREAM_TYPE_MAP_SCREEN
+                        val port = media.onScreen(this, hudType, stream)
+                        debugLog("airplay HUD $hudScreen screen SETUP dataPort=${port ?: "rejected"}")
+                        if (port != null) {
+                            startHudScreen(hudScreen)
+                            result.add(linkedMapOf("type" to STREAM_TYPE_ALT_SCREEN, "dataPort" to port))
+                        }
+                    } else {
+                        val port = media.onScreen(this, type, stream)
+                        debugLog("airplay screen stream type=$type dataPort=${port ?: "rejected"}")
+                        if (port != null) {
+                            if (type == STREAM_TYPE_MAIN_SCREEN && config.main.useIphoneCornerMask) {
+                                findIphoneCornerMask(stream)?.let(::notifyCornerMask)
+                            }
+                            activeStreams.add(type)
+                            if (type == STREAM_TYPE_ALT_SCREEN) beginClusterContent()
+                            else mainScreenToken = Any()
+                            result.add(linkedMapOf("type" to type, "dataPort" to port))
+                        }
                     }
                 }
                 STREAM_TYPE_MAIN_AUDIO, STREAM_TYPE_ALT_AUDIO, STREAM_TYPE_MAIN_HIGH_AUDIO -> {
@@ -802,6 +891,9 @@ class AirPlaySession(
         // Restore wheel input before releasing media resources, which may take time to close.
         if (types == null || STREAM_TYPE_MAIN_SCREEN in types) mainScreenToken = null
         if (types == null || STREAM_TYPE_ALT_SCREEN in types) clearClusterContent()
+        if (types == null || STREAM_TYPE_ALT_SCREEN in types) {
+            endHudScreens().forEach { media.onTeardown(this, it) }
+        }
         if (types == null) {
             activeStreams.toList().forEach { media.onTeardown(this, it) }
             activeStreams.clear()

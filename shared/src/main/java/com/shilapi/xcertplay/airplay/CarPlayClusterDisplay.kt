@@ -133,5 +133,55 @@ object CarPlayClusterDisplay {
         )
     }
 
+    // --- HUD map: a CarPlay map stream routed to the windshield HUD display ---
+    // Same mechanism as the cluster, sized for the HUD panel. Base 640x576 @ 15 fps;
+    // sizePercent snaps to a preset. The safe area keeps the marker inside a 60%% window.
+    const val HUD_MAP_BASE_WIDTH = 640
+    const val HUD_MAP_BASE_HEIGHT = 576
+    private const val HUD_MAP_FPS = 15
+    private const val HUD_MAP_MARKER_STEP_PERCENT = 2.5
+    private const val HUD_MAP_SAFE_PERCENT = 60.0
+    val hudMapSizePresets = listOf(75, 100, 125, 150)
+    val hudMapHorizontalSteps = -8..8
+    val hudMapVerticalSteps = -6..6
+
+    /** CarPlay map display config for the HUD; [mmPerPixel] sizes the physical hint. */
+    fun hudMap(
+        sizePercent: Int,
+        horizontalStep: Int,
+        verticalStep: Int,
+        mmPerPixel: Double,
+    ): AirPlayDisplayConfig {
+        val percent = hudMapSizePresets.minByOrNull { Math.abs(it - sizePercent) } ?: 100
+        val width = percent * HUD_MAP_BASE_WIDTH / 100
+        val height = percent * HUD_MAP_BASE_HEIGHT / 100
+        return AirPlayDisplayConfig(
+            widthPixels = width,
+            heightPixels = height,
+            widthPhysicalMm = Math.round(width * mmPerPixel).toInt(),
+            heightPhysicalMm = Math.round(height * mmPerPixel).toInt(),
+            fps = HUD_MAP_FPS,
+            primaryInputDevice = 0,
+            features = 0,
+            initialUrl = MAP_URL,
+            safeArea = hudMapSafeArea(width, height, horizontalStep, verticalStep),
+            safeAreaDrawOutside = true,
+        )
+    }
+
+    private fun hudMapSafeArea(width: Int, height: Int, horizontalStep: Int, verticalStep: Int): AirPlayInsets {
+        val half = HUD_MAP_SAFE_PERCENT / 2.0
+        val x = (50.0 + horizontalStep.coerceIn(hudMapHorizontalSteps) * HUD_MAP_MARKER_STEP_PERCENT)
+            .coerceIn(half, 100 - half)
+        val y = (50.0 + verticalStep.coerceIn(hudMapVerticalSteps) * HUD_MAP_MARKER_STEP_PERCENT)
+            .coerceIn(half, 100 - half)
+        return AirPlayInsets(
+            top = (height * (y - half) / 100).toInt(),
+            bottom = (height * ((100 - y) - half) / 100).toInt(),
+            left = (width * (x - half) / 100).toInt(),
+            right = (width * ((100 - x) - half) / 100).toInt(),
+        )
+    }
+
     private fun roundTo8(value: Double): Int = (Math.round(value / 8) * 8).toInt().coerceAtLeast(8)
 }

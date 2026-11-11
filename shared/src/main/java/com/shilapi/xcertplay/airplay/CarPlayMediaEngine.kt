@@ -148,10 +148,14 @@ class CarPlayMediaEngine(
         sink.setVideoRecoveryHandler(type) {
             if (streams[streamKey] === screen) {
                 // The cluster asks for a keyframe of its own screen; the plain command is the main screen's.
-                val command = if (type == STREAM_TYPE_ALT_SCREEN) {
-                    mapOf("type" to "forceKeyFrame", "params" to mapOf("uuid" to AirPlayInfoPlist.ALT_UUID))
-                } else {
-                    mapOf("type" to "forceKeyFrame")
+                val command = when (type) {
+                    STREAM_TYPE_ALT_SCREEN ->
+                        mapOf("type" to "forceKeyFrame", "params" to mapOf("uuid" to AirPlayInfoPlist.ALT_UUID))
+                    AirPlayInfoPlist.STREAM_TYPE_CARD_SCREEN ->
+                        mapOf("type" to "forceKeyFrame", "params" to mapOf("uuid" to AirPlayInfoPlist.CARD_UUID))
+                    AirPlayInfoPlist.STREAM_TYPE_MAP_SCREEN ->
+                        mapOf("type" to "forceKeyFrame", "params" to mapOf("uuid" to AirPlayInfoPlist.MAP_UUID))
+                    else -> mapOf("type" to "forceKeyFrame")
                 }
                 val sent = session.sendCommand(command)
                 session.logDebug("Video recovery: requested keyframe sent=$sent")
@@ -694,7 +698,8 @@ class CarPlayMediaEngine(
     }
 
     private fun isScreenStreamType(type: Int): Boolean =
-        type == STREAM_TYPE_MAIN_SCREEN || type == STREAM_TYPE_ALT_SCREEN
+        type == STREAM_TYPE_MAIN_SCREEN || type == STREAM_TYPE_ALT_SCREEN ||
+            type == AirPlayInfoPlist.STREAM_TYPE_CARD_SCREEN || type == AirPlayInfoPlist.STREAM_TYPE_MAP_SCREEN
 
     internal companion object {
         /**

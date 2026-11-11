@@ -470,6 +470,7 @@ class CarPlayController(
                 armWirelessHandoffWatchdog(wirelessGeneration.get())
                 maybeCompleteWirelessHandoff()
             }
+            if (type == "modes") com.shilapi.xcertplay.airplay.CarPlayNavigationState.onModesChanged(params)
             uiListener?.onCommand(session, type, params)
         }
 

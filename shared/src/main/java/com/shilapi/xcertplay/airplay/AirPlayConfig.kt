@@ -105,6 +105,16 @@ data class AirPlayConfig(
      * restricted the same way, because the iPhone picks one format for both directions.
      */
     val callAtCallRate: Boolean = false,
+    /** Offer a CarPlay turn card on the windshield HUD display ([com.shilapi.xcertplay.hud.zeekr.ZeekrDisplays] HUD). */
+    val hudCard: Boolean = false,
+    /** Offer a CarPlay map stream on the windshield HUD display. */
+    val hudMap: Boolean = false,
+    /** HUD map stream size, percent of the base; snapped to [CarPlayClusterDisplay.hudMapSizePresets]. */
+    val hudMapSizePercent: Int = 100,
+    /** HUD map marker horizontal step (negative = left). */
+    val hudMapMarkerHorizontal: Int = 0,
+    /** HUD map marker vertical step (negative = up). */
+    val hudMapMarkerVertical: Int = 0,
 )
 
 /** The offer, SETUP and controls must all honor the user's audio-output setting. */
