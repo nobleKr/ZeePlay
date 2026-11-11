@@ -4705,6 +4705,11 @@ class DiPlayActivity : ComponentActivity(), AppAppearanceOwner {
             ZeekrInteractionSettings.setHudEnabled(this, it)
             markReconnectNeeded()
         }
+        toggle(card, getString(R.string.settings_zeekr_hud_card), getString(R.string.settings_zeekr_hud_card_description),
+            ZeekrHudSettings.cardEnabled(this)) {
+            ZeekrHudSettings.setCardEnabled(this, it)
+            markReconnectNeeded()
+        }
     }
 
     private fun nativeVehicleDataSettings(card: LinearLayout) {

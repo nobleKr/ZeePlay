@@ -73,8 +73,10 @@ class ZeekrHudHost(private val activity: Activity, private val sink: AndroidMedi
 
     private fun apply() {
         val guiding = CarPlayNavigationState.phoneOwnsGuidance
-        CarPlayNavigationState.setWanted(HudScreen.MAP, guiding && ZeekrHudSettings.mapEnabled(activity))
-        CarPlayNavigationState.setWanted(HudScreen.CARD, guiding && ZeekrHudSettings.cardEnabled(activity))
+        // One HUD surface: the glass turn card takes the windshield when enabled; otherwise the map.
+        val card = ZeekrHudSettings.cardEnabled(activity)
+        CarPlayNavigationState.setWanted(HudScreen.CARD, guiding && card)
+        CarPlayNavigationState.setWanted(HudScreen.MAP, guiding && !card && ZeekrHudSettings.mapEnabled(activity))
     }
 
     private fun onSurface(s: Surface?) {
@@ -86,8 +88,9 @@ class ZeekrHudHost(private val activity: Activity, private val sink: AndroidMedi
     }
 
     private fun screenTypes(): List<Int> = buildList {
-        if (ZeekrHudSettings.mapEnabled(activity)) add(AirPlayInfoPlist.STREAM_TYPE_MAP_SCREEN)
+        // Mutually exclusive on the single HUD surface; the turn card has priority over the map.
         if (ZeekrHudSettings.cardEnabled(activity)) add(AirPlayInfoPlist.STREAM_TYPE_CARD_SCREEN)
+        else if (ZeekrHudSettings.mapEnabled(activity)) add(AirPlayInfoPlist.STREAM_TYPE_MAP_SCREEN)
     }
 
     companion object { private const val TAG = "Zeekr-HUD" }
