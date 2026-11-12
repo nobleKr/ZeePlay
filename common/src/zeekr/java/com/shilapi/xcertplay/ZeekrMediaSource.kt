@@ -67,6 +67,19 @@ internal class ZeekrMediaSource(
     private var yielded = false
     private var lastFocusState: String? = null
     private val folder = File(context.cacheDir, "zeekr-artwork/${UUID.randomUUID()}")
+    /**
+     * Hold the media-center focus on a steady 1 s tick, independent of the CarPlay now-playing
+     * "playing" flag (which can stay false while audio streams). Mirrors the working media bridge,
+     * which holds focus from the start and re-acquires continuously; [ensureFocusHeld] no-ops when we
+     * already own the source or the car revoked it ([yielded]).
+     */
+    private val focusTick = object : Runnable {
+        override fun run() {
+            if (closed || token == null || media == null) return
+            safely("focus-hold") { ensureFocusHeld() }
+            if (!closed && token != null && media != null) worker.postDelayed(this, 1000L)
+        }
+    }
     private val progressTick = object : Runnable {
         override fun run() {
             if (closed || token == null || media == null || !snapshot.info.playing) return
@@ -180,6 +193,7 @@ internal class ZeekrMediaSource(
         val old = snapshot
         val anchor = if (old.info.elapsedMillis != info.elapsedMillis || old.info.playing != info.playing)
             SystemClock.elapsedRealtime() else old.positionAt
+        if (old.info.playing != info.playing) note("nowplaying playing=${info.playing}")
         snapshot = Snapshot(info, artwork, anchor)
         if (bound || directBound) queuePublish()
     }
@@ -222,6 +236,7 @@ internal class ZeekrMediaSource(
 
     private fun invalidate() {
         worker.removeCallbacks(progressTick)
+        worker.removeCallbacks(focusTick)
         cancelInitWait()
         initAttempts = 0
         initOutstanding = false
@@ -264,6 +279,7 @@ internal class ZeekrMediaSource(
                             registrationOwner = null
                             registered = false; token = null; media = null; previous = null
                             worker.removeCallbacks(progressTick)
+                            worker.removeCallbacks(focusTick)
                             initDeadline?.let { worker.removeCallbacks(it) }
                             initDeadline = null
                             initOutstanding = false
@@ -421,6 +437,13 @@ internal class ZeekrMediaSource(
         if (token == null || media == null) return@safely
         mediaCommand(8) { it.writeIntArray(intArrayOf(ZeekrMediaProtocol.SOURCE)) }
         note("source registered")
+        // Hold the media-center focus from the start like the working bridge, then keep it on a
+        // steady tick: the CarPlay now-playing "playing" flag is unreliable, so progressTick alone
+        // (which only runs while playing) never asserted focus and the car reclaimed the source.
+        yielded = false
+        claimSource()
+        worker.removeCallbacks(focusTick)
+        worker.postDelayed(focusTick, 1000L)
         publish()
     }
 
