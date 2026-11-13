@@ -437,11 +437,11 @@ internal class ZeekrMediaSource(
         if (token == null || media == null) return@safely
         mediaCommand(8) { it.writeIntArray(intArrayOf(ZeekrMediaProtocol.SOURCE)) }
         note("source registered")
-        // Hold the media-center focus from the start like the working bridge, then keep it on a
+        // Take the media-center focus from the start like the working bridge, then keep it on a
         // steady tick: the CarPlay now-playing "playing" flag is unreliable, so progressTick alone
-        // (which only runs while playing) never asserted focus and the car reclaimed the source.
-        yielded = false
-        claimSource()
+        // (which only runs while playing) never asserted focus. CoreService re-registers about every
+        // 30 s, so a source the car explicitly took away ([yielded]) is not grabbed back here.
+        if (!yielded) claimSource()
         worker.removeCallbacks(focusTick)
         worker.postDelayed(focusTick, 1000L)
         publish()
@@ -486,7 +486,10 @@ internal class ZeekrMediaSource(
     private fun ensureFocusHeld() {
         if (yielded) return
         val state = queryFocusState()
-        if (state != "self" && state != "unknown") runCatching { claimSource() }
+        // Nobody selected: take it. Another source selected: only fight for it while CarPlay plays,
+        // so the steady focusTick never overrides a source the driver picked (radio, USB, ...).
+        val reclaim = state == "empty" || (state == "other" && snapshot.info.playing)
+        if (reclaim) runCatching { claimSource() }
         if (state != lastFocusState) { lastFocusState = state; note("source focus=$state") }
     }
 
