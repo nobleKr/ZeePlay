@@ -63,17 +63,18 @@ object CarPlayNavigationState {
      * "name="/"token" text the diagnostic redactor drops), or null when unchanged since last time.
      */
     fun modesDiagnostic(params: Map<String, Any?>): String? {
-        val raw = params["appStates"]
-        val summary = (raw as? List<*>)?.joinToString(" ") { entry ->
-            val map = entry as? Map<*, *> ?: return@joinToString "?" + (entry?.javaClass?.simpleName ?: "null")
-            map.entries.joinToString(",", "{", "}") { (k, v) -> "$k~" + describe(v) }
-        } ?: ("absent:" + (raw?.javaClass?.simpleName ?: "null"))
-        val safe = summary.replace(Regex("(?i)name"), "nm").replace(Regex("(?i)token"), "tkn")
-        val line = "owns=$phoneOwnsGuidance route=$routeGuidanceActive appStates=$safe"
+        val safe = "appStates=" + layout(params["appStates"]) + " resources=" + layout(params["resources"])
+        val line = "owns=$phoneOwnsGuidance route=$routeGuidanceActive " +
+            safe.replace(Regex("(?i)name"), "nm").replace(Regex("(?i)token"), "tkn")
         if (line == lastModesSummary) return null
         lastModesSummary = line
         return line
     }
+
+    private fun layout(raw: Any?): String = (raw as? List<*>)?.joinToString(" ") { entry ->
+        val map = entry as? Map<*, *> ?: return@joinToString "?" + (entry?.javaClass?.simpleName ?: "null")
+        map.entries.joinToString(",", "{", "}") { (k, v) -> "$k~" + describe(v) }
+    } ?: ("absent:" + (raw?.javaClass?.simpleName ?: "null"))
 
     private fun describe(v: Any?): String = when (v) {
         null -> "null"
