@@ -314,12 +314,17 @@ class AirPlaySession(
         return ended
     }
 
-    /** Re-push the wanted state for every active HUD screen after (re-)SETUP. */
+    /**
+     * Re-push the wanted state for every active HUD screen. This runs after every control-channel
+     * response (the phone's 2 s feedback and every command), not only after SETUP, so it must send
+     * only real changes: a freshly set-up screen starts as uiShown=true (startHudScreen), which
+     * already yields exactly one stopUI when it is not wanted. Forcing here sent stopUI to both HUD
+     * screens every 2 s (1000+ per session on-car).
+     */
     private fun reapplyHudScreens() {
         for (screen in HudScreen.entries) {
             if (hudScreens.getValue(screen).active) {
-                val wanted = CarPlayNavigationState.wanted(screen)
-                applyHudScreenWanted(screen, wanted, force = !wanted)
+                applyHudScreenWanted(screen, CarPlayNavigationState.wanted(screen), force = false)
             }
         }
     }
