@@ -485,6 +485,7 @@ open class CarPlayHostActivity : ComponentActivity() {
     private val clusterTurnOverlayListener: (com.shilapi.xcertplay.hud.ClusterTurnGuidance?) -> Unit = { guidance ->
         runOnUiThread {
             clusterTurnGuidance = guidance
+            com.shilapi.xcertplay.airplay.CarPlayNavigationState.setRouteGuidanceActive(guidance != null)
             applyClusterTurnOverlay()
             windshieldHud?.update(guidance)
         }
@@ -668,6 +669,7 @@ open class CarPlayHostActivity : ComponentActivity() {
     private var requestedSmallWindowForStream: Boolean? = null
     @Volatile private var adbNaviMode: com.shilapi.xcertplay.hud.BydClusterNaviMode? = null
     private var sessionLog: SessionLogFile? = null
+    private var sessionLogMirror: ((String) -> Unit)? = null
     private var gestureFingerCount = 3
     private var settingsGestureHint: TextView? = null
     private var gestureSequenceActive = false
@@ -2028,6 +2030,8 @@ open class CarPlayHostActivity : ComponentActivity() {
         fallbackVideoView = null
         fallbackVideoBounds = null
         sessionLog?.append("Activity destroyed")
+        if (WheelKeyLog.mirror === sessionLogMirror) WheelKeyLog.mirror = null
+        sessionLogMirror = null
         sessionLog?.close()
         sessionLog = null
         super.onDestroy()
@@ -6859,6 +6863,9 @@ open class CarPlayHostActivity : ComponentActivity() {
             )
         }
         sessionLog = activeLog
+        val mirror: (String) -> Unit = { AsyncDiagnosticLog.append(activeLog, it) }
+        sessionLogMirror = mirror
+        WheelKeyLog.mirror = mirror
     }
 
     private fun refreshLogView(nowMillis: Long) {

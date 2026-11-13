@@ -472,11 +472,8 @@ class CarPlayController(
             }
             if (type == "modesChanged" || type == "modes") {
                 com.shilapi.xcertplay.airplay.CarPlayNavigationState.onModesChanged(params)
-                debugLog(
-                    "HUD guidance: type=$type owns=" +
-                        com.shilapi.xcertplay.airplay.CarPlayNavigationState.phoneOwnsGuidance +
-                        " appStates=" + params["appStates"],
-                )
+                com.shilapi.xcertplay.airplay.CarPlayNavigationState.modesDiagnostic(params)
+                    ?.let { debugLog("HUD guidance: type=$type $it") }
             }
             uiListener?.onCommand(session, type, params)
         }

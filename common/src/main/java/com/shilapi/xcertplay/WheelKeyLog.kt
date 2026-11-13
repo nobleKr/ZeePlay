@@ -35,9 +35,17 @@ internal object WheelKeyLog {
         boundAtMillis = nowMillis
     }
 
+    /** Optional copy of notes into the session log (diplay.log), so a busy ring buffer cannot hide them. */
+    @Volatile var mirror: ((String) -> Unit)? = null
+
     /** A line the service also writes to logcat. */
     @Synchronized
-    fun note(message: String, nowMillis: Long = System.currentTimeMillis()) = add(message, nowMillis)
+    fun note(message: String, nowMillis: Long = System.currentTimeMillis()) {
+        add(message, nowMillis)
+        if (!message.startsWith("Ecarx HUD: push") && !message.startsWith("Ecarx HUD: tla")) {
+            runCatching { mirror?.invoke(message) }
+        }
+    }
 
     /** [text] is a key that writes text; [detail] says which feature kept the key or why one did not. */
     @Synchronized

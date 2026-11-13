@@ -67,16 +67,24 @@ class ZeekrHudHost(private val activity: Activity, private val sink: AndroidMedi
     }
 
     private fun tick() {
-        arHud.tick(CarPlayNavigationState.phoneOwnsGuidance)
+        arHud.tick(CarPlayNavigationState.guiding)
         apply()
     }
 
+    private var lastState: String? = null
+
     private fun apply() {
-        val guiding = CarPlayNavigationState.phoneOwnsGuidance
+        val guiding = CarPlayNavigationState.guiding
         // One HUD surface: the glass turn card takes the windshield when enabled; otherwise the map.
         val card = ZeekrHudSettings.cardEnabled(activity)
+        val map = !card && ZeekrHudSettings.mapEnabled(activity)
         CarPlayNavigationState.setWanted(HudScreen.CARD, guiding && card)
-        CarPlayNavigationState.setWanted(HudScreen.MAP, guiding && !card && ZeekrHudSettings.mapEnabled(activity))
+        CarPlayNavigationState.setWanted(HudScreen.MAP, guiding && map)
+        val state = "guiding=$guiding owns=${CarPlayNavigationState.phoneOwnsGuidance} " +
+            "route=${CarPlayNavigationState.routeGuidanceActive} card=$card map=$map " +
+            "sessions(card=${CarPlayNavigationState.hasSession(HudScreen.CARD)} " +
+            "map=${CarPlayNavigationState.hasSession(HudScreen.MAP)}) surface=${surface != null}"
+        if (state != lastState) { lastState = state; WheelKeyLog.note("HUD host: $state") }
     }
 
     private fun onSurface(s: Surface?) {
