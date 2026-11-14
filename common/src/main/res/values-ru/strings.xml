@@ -975,5 +975,10 @@
     <string name="settings_zeekr_hud_description">Show the next turn — maneuver, distance and road — on the instrument cluster and the windshield head-up display while navigating.</string>
     <string name="settings_zeekr_hud_card">Карточка поворота на лобовом</string>
     <string name="settings_zeekr_hud_card_description">Показывать собственную карточку поворота CarPlay (стрелка манёвра, расстояние и дорога) на проекционном дисплее вместо движущейся карты во время навигации.</string>
+    <string name="settings_zeekr_hud_dark">Тёмный HUD на лобовом (экспериментально)</string>
+    <string name="settings_zeekr_hud_dark_description">Просит CarPlay рисовать карту и карточку поворота для лобового стекла в тёмной теме, чтобы светились только дороги, стрелка и текст. Применяется после переподключения CarPlay.</string>
+    <string name="settings_zeekr_hud_size">HUD на лобовом · размер</string>
+    <string name="settings_zeekr_hud_horizontal">HUD на лобовом · влево / вправо</string>
+    <string name="settings_zeekr_hud_vertical">HUD на лобовом · вверх / вниз</string>
     <string name="settings_zeekr_cluster_map_description">Показывает карту CarPlay с iPhone на приборной панели.</string>
 </resources>

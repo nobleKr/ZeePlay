@@ -40,7 +40,7 @@ class ZeekrHudHost(private val activity: Activity, private val sink: AndroidMedi
             if (presentation == null) {
                 val p = ZeekrHudPresentation(activity, display) { s -> activity.runOnUiThread { onSurface(s) } }
                 p.setOnDismissListener { if (presentation === p) { presentation = null; onSurface(null) } }
-                runCatching { p.show(); presentation = p }
+                runCatching { p.show(); presentation = p; lastLayout = null }
                     .onFailure { Log.w(TAG, "HUD presentation failed: ${it.message}") }
             }
         }
@@ -69,6 +69,31 @@ class ZeekrHudHost(private val activity: Activity, private val sink: AndroidMedi
     private fun tick() {
         arHud.tick(CarPlayNavigationState.guiding)
         apply()
+        CarPlayNavigationState.setHudNightMode(if (ZeekrHudSettings.darkEnabled(activity)) true else null)
+        applyLayout()
+    }
+
+    private var lastLayout: ZeekrHudPresentation.Layout? = null
+
+    /** Live placement from the settings sliders; no reconnect needed. */
+    private fun applyLayout() {
+        val card = ZeekrHudSettings.cardEnabled(activity)
+        val stream = if (card) {
+            AirPlayInfoPlist.CARD_WIDTH to AirPlayInfoPlist.CARD_HEIGHT
+        } else {
+            val map = com.shilapi.xcertplay.airplay.CarPlayClusterDisplay.hudMap(ZeekrHudSettings.sizePercent(activity), 0, 0, 1.0)
+            map.widthPixels to map.heightPixels
+        }
+        val next = ZeekrHudPresentation.Layout(
+            stream.first, stream.second,
+            ZeekrHudSettings.layoutSizePercent(activity),
+            ZeekrHudSettings.layoutXPercent(activity),
+            ZeekrHudSettings.layoutYPercent(activity),
+        )
+        if (next == lastLayout) return
+        lastLayout = next
+        WheelKeyLog.note("HUD host: layout ${next.streamWidth}x${next.streamHeight} size=${next.sizePercent}% x=${next.xPercent}% y=${next.yPercent}%")
+        activity.runOnUiThread { presentation?.applyLayout(next) }
     }
 
     private var lastState: String? = null

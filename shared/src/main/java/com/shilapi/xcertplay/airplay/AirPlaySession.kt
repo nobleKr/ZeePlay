@@ -205,6 +205,8 @@ class AirPlaySession(
     private class HudScreenState(val uuid: String, val url: String) {
         @Volatile var active = false
         @Volatile var uiShown = false
+        /** Last per-display nightMode the phone accepted for this screen setup; null = none yet. */
+        @Volatile var nightSent: Boolean? = null
     }
     private val hudCommandLock = Any()
     private val hudScreens = mapOf(
@@ -289,12 +291,34 @@ class AirPlaySession(
             }
             if (sent) state.uiShown = wanted
             debugLog("airplay HUD $screen ${if (wanted) "showUI" else "stopUI"} sent=$sent")
+            if (sent && wanted) sendHudNightMode(screen, state)
         }
+    }
+
+    override fun applyHudNightMode() {
+        for ((screen, state) in hudScreens) if (state.active && state.uiShown) {
+            state.nightSent = null
+            sendHudNightMode(screen, state)
+        }
+    }
+
+    /**
+     * Per-display setNightMode (displayUUID) so only the HUD screens turn dark. Sent once per screen
+     * setup and value: this is reached from reapplyHudScreens after every control response.
+     */
+    private fun sendHudNightMode(screen: HudScreen, state: HudScreenState) {
+        val night = CarPlayNavigationState.hudNightMode ?: return
+        if (closed.get() || state.nightSent == night) return
+        val sent = sendCommand(
+            mapOf("type" to "setNightMode", "params" to linkedMapOf("nightMode" to night, "displayUUID" to state.uuid)),
+        )
+        if (sent) state.nightSent = night
+        debugLog("airplay HUD $screen nightMode=$night sent=$sent")
     }
 
     private fun startHudScreen(screen: HudScreen) {
         val state = hudScreens.getValue(screen)
-        synchronized(hudCommandLock) { state.active = true; state.uiShown = true }
+        synchronized(hudCommandLock) { state.active = true; state.uiShown = true; state.nightSent = null }
         CarPlayNavigationState.register(this)
     }
 
@@ -323,8 +347,10 @@ class AirPlaySession(
      */
     private fun reapplyHudScreens() {
         for (screen in HudScreen.entries) {
-            if (hudScreens.getValue(screen).active) {
+            val state = hudScreens.getValue(screen)
+            if (state.active) {
                 applyHudScreenWanted(screen, CarPlayNavigationState.wanted(screen), force = false)
+                if (state.uiShown) sendHudNightMode(screen, state)
             }
         }
     }
@@ -505,7 +531,21 @@ class AirPlaySession(
         val sent = sendCommandLocked(
             linkedMapOf("type" to "setNightMode", "params" to linkedMapOf("nightMode" to night)),
         )
-        if (sent) pendingNightMode = null
+        if (sent) {
+            pendingNightMode = null
+            // A phone-wide setNightMode also re-themes the HUD screens; put their own appearance back.
+            if (CarPlayNavigationState.hudNightMode != null) {
+                for ((screen, state) in hudScreens) if (state.active && state.uiShown) {
+                    val night = CarPlayNavigationState.hudNightMode ?: break
+                    val hudSent = sendCommandLocked(
+                        linkedMapOf("type" to "setNightMode",
+                            "params" to linkedMapOf("nightMode" to night, "displayUUID" to state.uuid)),
+                    )
+                    state.nightSent = if (hudSent) night else null
+                    debugLog("airplay HUD $screen nightMode=$night sent=$hudSent (after global)")
+                }
+            }
+        }
         return sent
     }
 

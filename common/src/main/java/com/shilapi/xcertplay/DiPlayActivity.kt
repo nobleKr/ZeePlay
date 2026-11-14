@@ -4710,6 +4710,30 @@ class DiPlayActivity : ComponentActivity(), AppAppearanceOwner {
             ZeekrHudSettings.setCardEnabled(this, it)
             markReconnectNeeded()
         }
+        toggle(card, getString(R.string.settings_zeekr_hud_dark), getString(R.string.settings_zeekr_hud_dark_description),
+            ZeekrHudSettings.darkEnabled(this)) {
+            ZeekrHudSettings.setDarkEnabled(this, it)
+            markReconnectNeeded()
+        }
+        // Live: the HUD host re-reads these every tick, so the driver can tune them while looking at the glass.
+        card.addView(overlaySliderRow(
+            getString(R.string.settings_zeekr_hud_size),
+            ZeekrHudSettings.layoutSizePercents,
+            ZeekrHudSettings.layoutSizePercent(this),
+        ) { it -> getString(R.string.turn_card_overlay_size_option, it) }
+            .also { it.onSave = { v -> ZeekrHudSettings.setLayoutSizePercent(this, v) } })
+        card.addView(overlaySliderRow(
+            getString(R.string.settings_zeekr_hud_horizontal),
+            ZeekrHudSettings.layoutPositionPercents,
+            ZeekrHudSettings.layoutXPercent(this),
+        ) { it -> overlayOffsetLabel(it, getString(R.string.marker_left), getString(R.string.marker_right), 50) }
+            .also { it.onSave = { v -> ZeekrHudSettings.setLayoutXPercent(this, v) } })
+        card.addView(overlaySliderRow(
+            getString(R.string.settings_zeekr_hud_vertical),
+            ZeekrHudSettings.layoutPositionPercents,
+            ZeekrHudSettings.layoutYPercent(this),
+        ) { it -> overlayOffsetLabel(it, getString(R.string.marker_up), getString(R.string.marker_down), 50) }
+            .also { it.onSave = { v -> ZeekrHudSettings.setLayoutYPercent(this, v) } })
     }
 
     private fun nativeVehicleDataSettings(card: LinearLayout) {

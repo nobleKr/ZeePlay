@@ -17,6 +17,8 @@ import java.util.concurrent.CopyOnWriteArraySet
 interface HudScreenHost {
     fun applyHudScreenWanted(screen: HudScreen, wanted: Boolean)
     fun hasHudScreen(screen: HudScreen): Boolean
+    /** Re-send the per-display appearance of the shown HUD screens ([CarPlayNavigationState.hudNightMode]). */
+    fun applyHudNightMode() {}
 }
 
 object CarPlayNavigationState {
@@ -43,6 +45,20 @@ object CarPlayNavigationState {
     val guiding: Boolean get() = phoneOwnsGuidance || routeGuidanceActive
 
     fun setRouteGuidanceActive(active: Boolean) { routeGuidanceActive = active }
+
+    /**
+     * Appearance requested for the windshield HUD screens only: true = dark (black emits no light on
+     * the projector), null = leave them on the phone-wide appearance.
+     */
+    @Volatile
+    var hudNightMode: Boolean? = null
+        private set
+
+    fun setHudNightMode(night: Boolean?) {
+        if (hudNightMode == night) return
+        hudNightMode = night
+        for (session in hudSessions) session.applyHudNightMode()
+    }
 
     @Volatile private var lastModesSummary: String? = null
 

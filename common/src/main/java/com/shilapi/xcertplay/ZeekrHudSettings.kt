@@ -16,6 +16,15 @@ object ZeekrHudSettings {
     private const val KEY_SIZE = "hud_map_size_percent"
     private const val KEY_MARKER_H = "hud_map_marker_h"
     private const val KEY_MARKER_V = "hud_map_marker_v"
+    private const val KEY_LAYOUT_SIZE = "hud_layout_size_percent"
+    private const val KEY_LAYOUT_X = "hud_layout_x_percent"
+    private const val KEY_LAYOUT_Y = "hud_layout_y_percent"
+    private const val KEY_DARK = "hud_dark_enabled"
+
+    /** Stream size on the HUD panel, percent of the largest aspect-correct fit. */
+    val layoutSizePercents = (20..150 step 5).toList()
+    /** Stream centre on the HUD panel, percent of the panel; 50 = centre. */
+    val layoutPositionPercents = (0..100 step 1).toList()
 
     private fun prefs(c: Context) = c.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
 
@@ -24,10 +33,18 @@ object ZeekrHudSettings {
     fun sizePercent(c: Context): Int = prefs(c).getInt(KEY_SIZE, 100)
     fun markerHorizontal(c: Context): Int = prefs(c).getInt(KEY_MARKER_H, 0)
     fun markerVertical(c: Context): Int = prefs(c).getInt(KEY_MARKER_V, 0)
+    fun layoutSizePercent(c: Context): Int = prefs(c).getInt(KEY_LAYOUT_SIZE, 100)
+    fun layoutXPercent(c: Context): Int = prefs(c).getInt(KEY_LAYOUT_X, 50)
+    fun layoutYPercent(c: Context): Int = prefs(c).getInt(KEY_LAYOUT_Y, 50)
+    fun darkEnabled(c: Context): Boolean = prefs(c).getBoolean(KEY_DARK, true)
 
     fun setMapEnabled(c: Context, on: Boolean) = prefs(c).edit().putBoolean(KEY_MAP, on).apply()
     fun setCardEnabled(c: Context, on: Boolean) = prefs(c).edit().putBoolean(KEY_CARD, on).apply()
     fun setSizePercent(c: Context, v: Int) = prefs(c).edit().putInt(KEY_SIZE, v).apply()
     fun setMarkerHorizontal(c: Context, v: Int) = prefs(c).edit().putInt(KEY_MARKER_H, v).apply()
     fun setMarkerVertical(c: Context, v: Int) = prefs(c).edit().putInt(KEY_MARKER_V, v).apply()
+    fun setLayoutSizePercent(c: Context, v: Int) = prefs(c).edit().putInt(KEY_LAYOUT_SIZE, v).apply()
+    fun setLayoutXPercent(c: Context, v: Int) = prefs(c).edit().putInt(KEY_LAYOUT_X, v).apply()
+    fun setLayoutYPercent(c: Context, v: Int) = prefs(c).edit().putInt(KEY_LAYOUT_Y, v).apply()
+    fun setDarkEnabled(c: Context, on: Boolean) = prefs(c).edit().putBoolean(KEY_DARK, on).apply()
 }

@@ -1065,5 +1065,10 @@
     <string name="settings_zeekr_hud_description">Show the next turn — maneuver, distance and road — on the instrument cluster and the windshield head-up display while navigating.</string>
     <string name="settings_zeekr_hud_card">Turn card on windshield</string>
     <string name="settings_zeekr_hud_card_description">Show CarPlay\'s own turn card (maneuver arrow, distance and road) on the windshield head-up display instead of the moving map while navigating.</string>
+    <string name="settings_zeekr_hud_dark">Dark windshield HUD (sperimentale)</string>
+    <string name="settings_zeekr_hud_dark_description">Asks CarPlay to draw the windshield map and turn card in dark mode, so only the roads, arrow and text light up. Reconnect CarPlay to apply.</string>
+    <string name="settings_zeekr_hud_size">Windshield HUD · size</string>
+    <string name="settings_zeekr_hud_horizontal">Windshield HUD · left / right</string>
+    <string name="settings_zeekr_hud_vertical">Windshield HUD · up / down</string>
     <string name="settings_zeekr_cluster_map_description">Shows the iPhone\'s CarPlay map on the instrument-cluster display.</string>
 </resources>
