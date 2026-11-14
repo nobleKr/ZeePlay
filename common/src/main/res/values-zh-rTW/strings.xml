@@ -1035,6 +1035,8 @@
     <string name="settings_zeekr_hud_description">Show the next turn — maneuver, distance and road — on the instrument cluster and the windshield head-up display while navigating.</string>
     <string name="settings_zeekr_hud_card">Turn card on windshield</string>
     <string name="settings_zeekr_hud_card_description">Show CarPlay\'s own turn card (maneuver arrow, distance and road) on the windshield head-up display instead of the moving map while navigating.</string>
+    <string name="settings_zeekr_bt_pause">Turn off car Bluetooth during CarPlay</string>
+    <string name="settings_zeekr_bt_pause_description">The car Bluetooth music player pauses the iPhone whenever it plays through CarPlay. While wireless CarPlay runs, turn the car Bluetooth off about 10 s after connecting and back on when CarPlay ends or before the next connection. Other Bluetooth devices disconnect meanwhile; CarPlay calls keep working. Pairing is not touched. Applies at the next connection.</string>
     <string name="settings_zeekr_hud_dark">Dark windshield HUD（實驗性）</string>
     <string name="settings_zeekr_hud_dark_description">Asks CarPlay to draw the windshield map and turn card in dark mode, so only the roads, arrow and text light up. Reconnect CarPlay to apply.</string>
     <string name="settings_zeekr_hud_size">Windshield HUD · size</string>

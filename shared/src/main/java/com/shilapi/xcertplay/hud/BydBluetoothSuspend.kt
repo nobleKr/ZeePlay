@@ -1,5 +1,6 @@
 package com.shilapi.xcertplay.hud
 
+import android.annotation.SuppressLint
 import android.bluetooth.BluetoothAdapter
 import android.bluetooth.BluetoothManager
 import android.content.Context
@@ -36,7 +37,12 @@ object BydBluetoothSuspend {
                 readEnabled = { radioEnabled(app) },
                 requestEnabled = { enabled ->
                     // A non-null shell reply is not evidence that the radio changed state.
-                    shell.run(app, if (enabled) "svc bluetooth enable" else "svc bluetooth disable")
+                    val reply = runCatching {
+                        shell.run(app, if (enabled) "svc bluetooth enable" else "svc bluetooth disable")
+                    }.getOrNull()
+                    // No local ADB (Zeekr): the public adapter call, allowed with BLUETOOTH_CONNECT up to
+                    // Android 12. awaitEnabled still verifies the radio state either way.
+                    if (reply == null) adapterRequest(app, enabled)
                 },
                 awaitEnabled = { enabled -> awaitRadio(app, enabled) },
             ).also { lease = it }
@@ -121,6 +127,17 @@ object BydBluetoothSuspend {
         } else if (wasPaused) {
             log("car Bluetooth back on")
         }
+    }
+
+    @SuppressLint("MissingPermission")
+    @Suppress("DEPRECATION")
+    private fun adapterRequest(context: Context, enabled: Boolean) {
+        val adapter = context.getSystemService(BluetoothManager::class.java)?.adapter
+            ?: BluetoothAdapter.getDefaultAdapter() ?: return
+        val accepted = runCatching { if (enabled) adapter.enable() else adapter.disable() }
+            .onFailure { Log.w(TAG, "BluetoothAdapter ${if (enabled) "enable" else "disable"} failed: ${it.message}") }
+            .getOrDefault(false)
+        Log.i(TAG, "BluetoothAdapter.${if (enabled) "enable" else "disable"}() accepted=$accepted")
     }
 
     private fun radioEnabled(context: Context): Boolean? = runCatching {

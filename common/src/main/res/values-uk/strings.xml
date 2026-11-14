@@ -987,6 +987,8 @@
     <string name="settings_zeekr_hud_description">Показувати наступний маневр — стрілку, дистанцію й дорогу — на приладовому щитку та проєкційному HUD під час навігації.</string>
     <string name="settings_zeekr_hud_card">Картка повороту на лобовому</string>
     <string name="settings_zeekr_hud_card_description">Показувати власну картку повороту CarPlay (стрілка маневру, відстань і дорога) на проєкційному дисплеї замість рухомої мапи під час навігації.</string>
+    <string name="settings_zeekr_bt_pause">Вимикати Bluetooth машини під час CarPlay</string>
+    <string name="settings_zeekr_bt_pause_description">Музичний Bluetooth-плеєр машини ставить iPhone на паузу, щойно той грає через CarPlay. Поки працює бездротовий CarPlay, Bluetooth машини вимикається приблизно через 10 с після підключення й вмикається, коли CarPlay завершується або перед наступним підключенням. Інші Bluetooth-пристрої тим часом відключаються; дзвінки через CarPlay працюють. Пари не змінюються. Застосовується з наступного підключення.</string>
     <string name="settings_zeekr_hud_dark">Темний HUD на лобовому (експериментально)</string>
     <string name="settings_zeekr_hud_dark_description">Просить CarPlay малювати мапу й картку повороту для лобового скла в темній темі, щоб світилися лише дороги, стрілка й текст. Застосовується після перепідключення CarPlay.</string>
     <string name="settings_zeekr_hud_size">HUD на лобовому · розмір</string>

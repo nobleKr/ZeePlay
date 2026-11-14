@@ -4710,6 +4710,12 @@ class DiPlayActivity : ComponentActivity(), AppAppearanceOwner {
             ZeekrHudSettings.setCardEnabled(this, it)
             markReconnectNeeded()
         }
+        // Same persistence as the BYD ADB control (that card is not shown in the zeekr edition).
+        toggle(card, getString(R.string.settings_zeekr_bt_pause), getString(R.string.settings_zeekr_bt_pause_description),
+            AirPlayPersistence.loadBtSuspendDuringCarplay(this)) {
+            AirPlayPersistence.saveBtSuspendDuringCarplay(this, it)
+            markReconnectNeeded()
+        }
         toggle(card, getString(R.string.settings_zeekr_hud_dark), getString(R.string.settings_zeekr_hud_dark_description),
             ZeekrHudSettings.darkEnabled(this)) {
             ZeekrHudSettings.setDarkEnabled(this, it)
