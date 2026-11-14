@@ -86,13 +86,13 @@ class ZeekrHudHost(private val activity: Activity, private val sink: AndroidMedi
         }
         val next = ZeekrHudPresentation.Layout(
             stream.first, stream.second,
-            ZeekrHudSettings.layoutSizePercent(activity),
-            ZeekrHudSettings.layoutXPercent(activity),
-            ZeekrHudSettings.layoutYPercent(activity),
+            ZeekrHudSettings.layoutSizePercent(activity, card),
+            ZeekrHudSettings.layoutXPercent(activity, card),
+            ZeekrHudSettings.layoutYPercent(activity, card),
         )
         if (next == lastLayout) return
         lastLayout = next
-        WheelKeyLog.note("HUD host: layout ${next.streamWidth}x${next.streamHeight} size=${next.sizePercent}% x=${next.xPercent}% y=${next.yPercent}%")
+        WheelKeyLog.note("HUD host: layout ${if (card) "card" else "map"} ${next.streamWidth}x${next.streamHeight} size=${next.sizePercent}% x=${next.xPercent}% y=${next.yPercent}%")
         activity.runOnUiThread { presentation?.applyLayout(next) }
     }
 

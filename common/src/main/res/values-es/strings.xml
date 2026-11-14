@@ -982,5 +982,7 @@
     <string name="settings_zeekr_hud_size">Windshield HUD · size</string>
     <string name="settings_zeekr_hud_horizontal">Windshield HUD · left / right</string>
     <string name="settings_zeekr_hud_vertical">Windshield HUD · up / down</string>
+    <string name="settings_zeekr_hud_mode_card">tarjeta de giro</string>
+    <string name="settings_zeekr_hud_mode_map">mapa</string>
     <string name="settings_zeekr_cluster_map_description">Shows the iPhone\'s CarPlay map on the instrument-cluster display.</string>
 </resources>

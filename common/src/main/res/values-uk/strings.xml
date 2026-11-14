@@ -994,5 +994,7 @@
     <string name="settings_zeekr_hud_size">HUD на лобовому · розмір</string>
     <string name="settings_zeekr_hud_horizontal">HUD на лобовому · ліворуч / праворуч</string>
     <string name="settings_zeekr_hud_vertical">HUD на лобовому · вгору / вниз</string>
+    <string name="settings_zeekr_hud_mode_card">картка повороту</string>
+    <string name="settings_zeekr_hud_mode_map">мапа</string>
     <string name="settings_zeekr_cluster_map_description">Показує карту CarPlay з iPhone на панелі приладів.</string>
 </resources>

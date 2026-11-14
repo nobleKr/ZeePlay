@@ -4709,6 +4709,7 @@ class DiPlayActivity : ComponentActivity(), AppAppearanceOwner {
             ZeekrHudSettings.cardEnabled(this)) {
             ZeekrHudSettings.setCardEnabled(this, it)
             markReconnectNeeded()
+            render() // the placement sliders below switch to the other mode
         }
         // Same persistence as the BYD ADB control (that card is not shown in the zeekr edition).
         toggle(card, getString(R.string.settings_zeekr_bt_pause), getString(R.string.settings_zeekr_bt_pause_description),
@@ -4722,24 +4723,27 @@ class DiPlayActivity : ComponentActivity(), AppAppearanceOwner {
             markReconnectNeeded()
         }
         // Live: the HUD host re-reads these every tick, so the driver can tune them while looking at the glass.
+        // They edit the placement of the mode shown now (turn card or map); each mode keeps its own.
+        val hudCard = ZeekrHudSettings.cardEnabled(this)
+        val hudMode = getString(if (hudCard) R.string.settings_zeekr_hud_mode_card else R.string.settings_zeekr_hud_mode_map)
         card.addView(overlaySliderRow(
-            getString(R.string.settings_zeekr_hud_size),
+            "${getString(R.string.settings_zeekr_hud_size)} ($hudMode)",
             ZeekrHudSettings.layoutSizePercents,
-            ZeekrHudSettings.layoutSizePercent(this),
+            ZeekrHudSettings.layoutSizePercent(this, hudCard),
         ) { it -> getString(R.string.turn_card_overlay_size_option, it) }
-            .also { it.onSave = { v -> ZeekrHudSettings.setLayoutSizePercent(this, v) } })
+            .also { it.onSave = { v -> ZeekrHudSettings.setLayoutSizePercent(this, hudCard, v) } })
         card.addView(overlaySliderRow(
-            getString(R.string.settings_zeekr_hud_horizontal),
+            "${getString(R.string.settings_zeekr_hud_horizontal)} ($hudMode)",
             ZeekrHudSettings.layoutPositionPercents,
-            ZeekrHudSettings.layoutXPercent(this),
+            ZeekrHudSettings.layoutXPercent(this, hudCard),
         ) { it -> overlayOffsetLabel(it, getString(R.string.marker_left), getString(R.string.marker_right), 50) }
-            .also { it.onSave = { v -> ZeekrHudSettings.setLayoutXPercent(this, v) } })
+            .also { it.onSave = { v -> ZeekrHudSettings.setLayoutXPercent(this, hudCard, v) } })
         card.addView(overlaySliderRow(
-            getString(R.string.settings_zeekr_hud_vertical),
+            "${getString(R.string.settings_zeekr_hud_vertical)} ($hudMode)",
             ZeekrHudSettings.layoutPositionPercents,
-            ZeekrHudSettings.layoutYPercent(this),
+            ZeekrHudSettings.layoutYPercent(this, hudCard),
         ) { it -> overlayOffsetLabel(it, getString(R.string.marker_up), getString(R.string.marker_down), 50) }
-            .also { it.onSave = { v -> ZeekrHudSettings.setLayoutYPercent(this, v) } })
+            .also { it.onSave = { v -> ZeekrHudSettings.setLayoutYPercent(this, hudCard, v) } })
     }
 
     private fun nativeVehicleDataSettings(card: LinearLayout) {
